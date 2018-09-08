@@ -2,11 +2,11 @@ use_frameworks!
 
 target 'LXMPlayer_Example' do
   pod 'LXMPlayer', :path => '../'
-
-  target 'LXMPlayer_Tests' do
-    inherit! :search_paths
-
-    pod 'Specta'
-    pod 'Expecta'
-  end
+  
+#  target 'LXMPlayer_Tests' do
+#    inherit! :search_paths
+#
+#    pod 'Specta'
+#    pod 'Expecta'
+#  end
 end

@@ -1,0 +1,27 @@
+PODS:
+  - KVOController (1.2.0)
+  - LXMBlockKit (0.0.7)
+  - LXMPlayer (0.1.0):
+    - KVOController (~> 1.2.0)
+    - LXMBlockKit (~> 0.0.7)
+
+DEPENDENCIES:
+  - LXMPlayer (from `../`)
+
+SPEC REPOS:
+  https://github.com/cocoapods/specs.git:
+    - KVOController
+    - LXMBlockKit
+
+EXTERNAL SOURCES:
+  LXMPlayer:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  KVOController: d72ace34afea42468329623b3379ab3cd1d286b6
+  LXMBlockKit: 5e9d034a7f1568a0a8053fcf0496b6a1d45acc34
+  LXMPlayer: 5d32978818310bc125a2d5233be6f9d70d546610
+
+PODFILE CHECKSUM: ea4c525f196684a227feb14b8d7a68f3ca0dcdc4
+
+COCOAPODS: 1.5.3
