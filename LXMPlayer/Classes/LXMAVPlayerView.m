@@ -13,7 +13,6 @@
 
 //static void * kLXMAVPlayerViewContext = &kLXMAVPlayerViewContext;
 static NSString * const kAVPlayerItemStatus = @"status";
-static NSString * const kAVPlayerRate = @"rate";
 static NSString * const kAVPlayerItemPlaybackBufferEmpty = @"playbackBufferEmpty";
 static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyToKeepUp";
 
@@ -26,7 +25,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 @property (nonatomic, strong) AVPlayer *avPlayer;
 @property (nonatomic, strong, readonly) AVPlayerLayer *playerLayer;
 @property (nonatomic, strong) id timeObserver;
-@property (nonatomic, assign) BOOL isPreparedToPlay;
+@property (nonatomic, assign) BOOL isPlayerInited;
 
 //time
 @property (nonatomic, assign, readwrite) LXMAVPlayerStatus playerStatus;
@@ -154,13 +153,13 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }
     
     
-    [kNSNotificationDefaultCenter addObserver:self name:AVPlayerItemDidPlayToEndTimeNotification callback:^(NSNotification * _Nullable sender) {
+    [kNSNotificationCenter addObserver:self name:AVPlayerItemDidPlayToEndTimeNotification callback:^(NSNotification * _Nullable sender) {
         @strongify(self)
-        self.playerStatus = LXMAVPlayerStatusStoped;
         if (sender.object == self.avPlayer.currentItem) {
             if (self.playerDidPlayToEndBlock) {
                 self.playerDidPlayToEndBlock(sender.object);
             }
+            [self stop];
         }
     }];
     
@@ -184,12 +183,13 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     if (self.playerStatus == LXMAVPlayerStatusPlaying) {
         return;
     }
-    if (self.isPreparedToPlay == NO) {
+    if (self.isPlayerInited == NO) {
         [self initializePlayer];
-        self.isPreparedToPlay = YES;
+        self.isPlayerInited = YES;
     }
     [self.avPlayer play];
-    
+    self.playerStatus = LXMAVPlayerStatusStalling;
+    [self delegateStatusDidChangeBlock];
 }
 
 - (void)pause {
@@ -203,7 +203,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     [self.avPlayer seekToTime:kCMTimeZero completionHandler:^(BOOL finished) {
         
     }];
-    self.playerStatus = LXMAVPlayerStatusStoped;
+    self.playerStatus = LXMAVPlayerStatusStopped;
     [self delegateStatusDidChangeBlock];
 }
 
@@ -215,13 +215,13 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         [self.avPlayer removeTimeObserver:self.timeObserver];
         self.timeObserver = nil;
     }
-    [kNSNotificationDefaultCenter lxm_removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
+    [kNSNotificationCenter lxm_removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
     
     self.assetURL = nil;
     self.urlAsset = nil;
     self.playerItem = nil;
     self.avPlayer = nil;
-    self.isPreparedToPlay = NO;
+    self.isPlayerInited = NO;
     self.playerStatus = LXMAVPlayerStatusUnknown;
     [self delegateStatusDidChangeBlock];
 }

@@ -8,8 +8,8 @@
 #ifndef LXMPlayerMacro_h
 #define LXMPlayerMacro_h
 
-#ifndef kNSNotificationDefaultCenter
-#define kNSNotificationDefaultCenter    [NSNotificationCenter defaultCenter]
+#ifndef kNSNotificationCenter
+#define kNSNotificationCenter    [NSNotificationCenter defaultCenter]
 #endif
 
 

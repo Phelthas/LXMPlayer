@@ -22,8 +22,9 @@ typedef NS_ENUM(NSInteger, LXMAVPlayerStatus) {
     LXMAVPlayerStatusReadyToPlay,
     LXMAVPlayerStatusPlaying,
     LXMAVPlayerStatusPaused,
+    LXMAVPlayerStatusStopped,
     LXMAVPlayerStatusFailed,
-    LXMAVPlayerStatusStoped,
+    
 };
 
 
@@ -36,9 +37,7 @@ typedef void(^LXMAVPlayerStatusDidChangeBlock)(LXMAVPlayerStatus status);
 @property (nonatomic, strong, nullable) NSURL *assetURL;
 @property (nonatomic, copy) AVLayerVideoGravity videoGravity;
 
-//time
-@property (nonatomic, assign, readonly) NSTimeInterval currentTime;
-@property (nonatomic, assign, readonly) NSTimeInterval totalTime;
+
 @property (nonatomic, assign, readonly) LXMAVPlayerStatus playerStatus;
 
 
