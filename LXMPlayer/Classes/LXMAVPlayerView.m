@@ -9,6 +9,8 @@
 #import <KVOController/KVOController.h>
 #import <LXMPlayer/LXMPlayerMacro.h>
 #import <LXMBlockKit/LXMBlockKit.h>
+#import "LXMPlayerMacro.h"
+#import <AFNetworking/AFNetworking.h>
 
 
 //static void * kLXMAVPlayerViewContext = &kLXMAVPlayerViewContext;
@@ -21,7 +23,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 //private
 
 @property (nonatomic, strong) AVURLAsset *urlAsset;
-@property (nonatomic, strong) AVPlayerItem *playerItem;
+@property (nonatomic, strong, readwrite) AVPlayerItem *playerItem;
 @property (nonatomic, strong) AVPlayer *avPlayer;
 @property (nonatomic, strong, readonly) AVPlayerLayer *playerLayer;
 @property (nonatomic, strong) id timeObserver;
@@ -29,6 +31,8 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 
 //time
 @property (nonatomic, assign, readwrite) LXMAVPlayerStatus playerStatus;
+
+@property (nonatomic, assign) LXMAVPlayerStatus statusBeforeBackground;
 
 @end
 
@@ -52,6 +56,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     if (self) {
         self.backgroundColor = [UIColor blackColor];
         self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspect;
+        [[AFNetworkReachabilityManager sharedManager] startMonitoring];
     }
     return self;
 }
@@ -104,8 +109,11 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
                 [self delegateStatusDidChangeBlock];
                 break;
             case AVPlayerItemStatusReadyToPlay:
-                self.playerStatus = LXMAVPlayerStatusReadyToPlay;
-                [self delegateStatusDidChangeBlock];
+                // 这里这么写是因为：从后台返回前台时，kvo居然会观察到playerItem的状态变为readToPlay
+                if (self.playerStatus == LXMAVPlayerStatusUnknown) {
+                    self.playerStatus = LXMAVPlayerStatusReadyToPlay;
+                    [self delegateStatusDidChangeBlock];
+                }
                 break;
             case AVPlayerItemStatusFailed:
                 self.playerStatus = LXMAVPlayerStatusFailed;
@@ -152,6 +160,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         }];
     }
     
+    [self removeNotificatiions];
     
     [kNSNotificationCenter addObserver:self name:AVPlayerItemDidPlayToEndTimeNotification callback:^(NSNotification * _Nullable sender) {
         @strongify(self)
@@ -163,6 +172,43 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         }
     }];
     
+    [kNSNotificationCenter addObserver:self name:UIApplicationWillResignActiveNotification callback:^(NSNotification * _Nullable sender) {
+        @strongify(self)
+        // 加这个判断是因为貌似，这个通知在拉下通知栏的时候会触发两次
+        if (self.statusBeforeBackground == LXMAVPlayerStatusUnknown) {
+            self.statusBeforeBackground = self.playerStatus;
+            [self pause];
+        }
+        
+    }];
+    
+    [kNSNotificationCenter addObserver:self name:UIApplicationDidBecomeActiveNotification callback:^(NSNotification * _Nullable sender) {
+        @strongify(self)
+        if (self.statusBeforeBackground == LXMAVPlayerStatusUnknown) {
+            return;
+        }
+        if (self.statusBeforeBackground == LXMAVPlayerStatusPlaying ||
+            self.statusBeforeBackground == LXMAVPlayerStatusStalling ||
+            self.statusBeforeBackground == LXMAVPlayerStatusReadyToPlay) {
+            [self play];
+        }
+        self.statusBeforeBackground = LXMAVPlayerStatusUnknown;
+    }];
+    
+    [kNSNotificationCenter addObserver:self name:AFNetworkingReachabilityDidChangeNotification callback:^(NSNotification * _Nullable sender) {
+        @strongify(self)
+        if ([AFNetworkReachabilityManager sharedManager].networkReachabilityStatus != AFNetworkReachabilityStatusReachableViaWiFi) {
+            self.statusBeforeBackground = LXMAVPlayerStatusPaused;
+        }
+        
+    }];
+}
+
+- (void)removeNotificatiions {
+    [kNSNotificationCenter lxm_removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
+    [kNSNotificationCenter lxm_removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
+    [kNSNotificationCenter lxm_removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];
+    [kNSNotificationCenter lxm_removeObserver:self name:AFNetworkingReachabilityDidChangeNotification object:nil];
 }
 
 - (void)delegateStatusDidChangeBlock {
@@ -188,8 +234,11 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         self.isPlayerInited = YES;
     }
     [self.avPlayer play];
-    self.playerStatus = LXMAVPlayerStatusStalling;
-    [self delegateStatusDidChangeBlock];
+    if (self.playerStatus == LXMAVPlayerStatusPaused) {
+        self.playerStatus = LXMAVPlayerStatusPlaying;
+        [self delegateStatusDidChangeBlock];
+    }
+    
 }
 
 - (void)pause {
@@ -199,13 +248,11 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (void)stop {
-    [self.avPlayer pause];
-    [self.avPlayer seekToTime:kCMTimeZero completionHandler:^(BOOL finished) {
-        
-    }];
     self.playerStatus = LXMAVPlayerStatusStopped;
     [self delegateStatusDidChangeBlock];
 }
+
+
 
 - (void)reset {
     [self.avPlayer pause];
@@ -215,7 +262,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         [self.avPlayer removeTimeObserver:self.timeObserver];
         self.timeObserver = nil;
     }
-    [kNSNotificationCenter lxm_removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
+    [self removeNotificatiions];
     
     self.assetURL = nil;
     self.urlAsset = nil;
@@ -234,6 +281,25 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }];
 }
 
+- (void)seekToTimeAndPlay:(CMTime)time {
+    if (self.playerItem == nil) {
+        return;
+    }
+    [self.avPlayer pause];
+//    CMTime tolerance = CMTimeMakeWithSeconds(1, self.playerItem.duration.timescale);
+    CMTime tolerance = kCMTimeZero;
+    [self.avPlayer seekToTime:time toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:^(BOOL finished) {
+        [self.avPlayer play];
+    }];
+}
+
+- (void)seekToTime:(CMTime)time completion:(void (^)(BOOL finished))completion {
+    if (self.playerItem == nil) {
+        return;
+    }
+    CMTime tolerance = kCMTimeZero;
+    [self.avPlayer seekToTime:time toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:completion];
+}
 
 
 - (nullable UIImage *)thumbnailAtCurrentTime {
@@ -253,6 +319,20 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 
 
 #pragma mark - Property
+
+
+/**
+ 注意：设置新的url会重置playerView
+ */
+- (void)setAssetURL:(NSURL *)assetURL {
+    if (assetURL == _assetURL) {
+        return;
+    }
+    if (assetURL != nil) {
+        [self reset];
+    }
+    _assetURL = assetURL;
+}
 
 - (NSTimeInterval)currentTime {
     if (self.playerItem != nil) {

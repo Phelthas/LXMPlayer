@@ -37,7 +37,7 @@ typedef void(^LXMAVPlayerStatusDidChangeBlock)(LXMAVPlayerStatus status);
 @property (nonatomic, strong, nullable) NSURL *assetURL;
 @property (nonatomic, copy) AVLayerVideoGravity videoGravity;
 
-
+@property (nonatomic, strong, readonly, nullable) AVPlayerItem *playerItem;
 @property (nonatomic, assign, readonly) LXMAVPlayerStatus playerStatus;
 
 
@@ -58,6 +58,10 @@ typedef void(^LXMAVPlayerStatusDidChangeBlock)(LXMAVPlayerStatus status);
 - (void)reset;
 
 - (void)replay;
+
+- (void)seekToTimeAndPlay:(CMTime)time;
+
+- (void)seekToTime:(CMTime)time completion:(void(^)(BOOL finished))completion;
 
 - (nullable UIImage *)thumbnailAtCurrentTime;
 
