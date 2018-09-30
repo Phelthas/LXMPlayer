@@ -37,6 +37,7 @@ typedef void(^LXMAVPlayerStatusDidChangeBlock)(LXMAVPlayerStatus status);
 @property (nonatomic, strong, nullable) NSURL *assetURL;
 @property (nonatomic, copy) AVLayerVideoGravity videoGravity;
 
+//readonly的属性，方便外部调用
 @property (nonatomic, strong, readonly, nullable) AVPlayerItem *playerItem;
 @property (nonatomic, assign, readonly) LXMAVPlayerStatus playerStatus;
 

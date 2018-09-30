@@ -93,8 +93,12 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     
     /*
      所以player的rate是没有必要观察的，rate就是在player调用play的时候变为1，调用pause的时候变为0，它的值不根据卡不卡变化，
-     它应该是用来绝对当load到新数据是要不要继续播放。
-     文档上还提到一种情况，playbackBufferFull是true但是isPlaybackLikelyToKeepUp还是false，及缓存已经满了，但是缓存的这些内容还不够用来播放，这种情况要自己处理。。。这种情况应该不多，我这儿没有处理。。。
+     它应该是用来决定当load到新数据是要不要继续播放。
+     文档上还提到一种情况，playbackBufferFull是true但是isPlaybackLikelyToKeepUp还是false，即缓存已经满了，但是缓存的这些内容还不够用来播放，这种情况要自己处理。。。这种情况应该不多，我这儿没有处理。。。
+     */
+    
+    /*
+     测试的时候发现，有时候从APP从后台返回前台，会观察到playerItem的status变化，但新旧值都是readToPlay，这个需要注意，如果有监听状态变化的逻辑，要判断这时候能不能执行操作
      */
     
     @weakify(self)
@@ -105,19 +109,23 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         AVPlayerItemStatus status = object.status;
         switch (status) {
             case AVPlayerItemStatusUnknown:
-                self.playerStatus = LXMAVPlayerStatusUnknown;
-                [self delegateStatusDidChangeBlock];
+                if (self.playerStatus != LXMAVPlayerStatusUnknown) {
+                    self.playerStatus = LXMAVPlayerStatusUnknown;
+                    [self delegateStatusDidChangeBlock];
+                }
                 break;
             case AVPlayerItemStatusReadyToPlay:
-                // 这里这么写是因为：从后台返回前台时，kvo居然会观察到playerItem的状态变为readToPlay
+                // 这里这么写是因为：从后台返回前台时，kvo居然会观察到playerItem的状态变为readToPlay,而我只想在playerItem第一次点击播放状态变为readToPlay的时候通知外部
                 if (self.playerStatus == LXMAVPlayerStatusUnknown) {
                     self.playerStatus = LXMAVPlayerStatusReadyToPlay;
                     [self delegateStatusDidChangeBlock];
                 }
                 break;
             case AVPlayerItemStatusFailed:
-                self.playerStatus = LXMAVPlayerStatusFailed;
-                [self delegateStatusDidChangeBlock];
+                if (self.playerStatus != LXMAVPlayerStatusFailed) {
+                    self.playerStatus = LXMAVPlayerStatusFailed;
+                    [self delegateStatusDidChangeBlock];
+                }
                 break;
             default:
                 break;
@@ -129,7 +137,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         @strongify(self)
         BOOL oldValue = [change[NSKeyValueChangeOldKey] boolValue];
         BOOL newValue = [change[NSKeyValueChangeNewKey] boolValue];
-        if (oldValue == 0 && newValue == 1) {
+        if (oldValue == NO && newValue == YES) {
             //这里这么写是因为观察到会有old new都是0的情况
             self.playerStatus = LXMAVPlayerStatusStalling;
             [self delegateStatusDidChangeBlock];
@@ -141,7 +149,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         @strongify(self)
         BOOL oldValue = [change[NSKeyValueChangeOldKey] boolValue];
         BOOL newValue = [change[NSKeyValueChangeNewKey] boolValue];
-        if (oldValue == 0 && newValue == 1) {
+        if (oldValue == NO && newValue == YES) {
             //这里这么写是因为观察到会有old new都是0的情况
             self.playerStatus = LXMAVPlayerStatusPlaying;
             [self delegateStatusDidChangeBlock];
@@ -168,7 +176,8 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
             if (self.playerDidPlayToEndBlock) {
                 self.playerDidPlayToEndBlock(sender.object);
             }
-            [self stop];
+            self.playerStatus = LXMAVPlayerStatusStopped;
+            [self delegateStatusDidChangeBlock];
         }
     }];
     
@@ -243,13 +252,21 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 
 - (void)pause {
     [self.avPlayer pause];
-    self.playerStatus = LXMAVPlayerStatusPaused;
-    [self delegateStatusDidChangeBlock];
+    if (self.playerStatus != LXMAVPlayerStatusPaused) {
+        self.playerStatus = LXMAVPlayerStatusPaused;
+        [self delegateStatusDidChangeBlock];
+    }
+    
 }
 
 - (void)stop {
-    self.playerStatus = LXMAVPlayerStatusStopped;
-    [self delegateStatusDidChangeBlock];
+    [self.avPlayer seekToTime:kCMTimeZero];
+    [self.avPlayer pause];
+    [self.avPlayer cancelPendingPrerolls];
+    if (self.playerStatus != LXMAVPlayerStatusStopped) {
+        self.playerStatus = LXMAVPlayerStatusStopped;
+        [self delegateStatusDidChangeBlock];
+    }
 }
 
 
@@ -269,8 +286,11 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     self.playerItem = nil;
     self.avPlayer = nil;
     self.isPlayerInited = NO;
-    self.playerStatus = LXMAVPlayerStatusUnknown;
-    [self delegateStatusDidChangeBlock];
+    if (self.playerStatus != LXMAVPlayerStatusUnknown) {
+        self.playerStatus = LXMAVPlayerStatusUnknown;
+        [self delegateStatusDidChangeBlock];
+    }
+    
 }
 
 - (void)replay {
