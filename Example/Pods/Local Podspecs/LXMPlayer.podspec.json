@@ -25,6 +25,9 @@
     ],
     "LXMBlockKit": [
       "~> 0.0.7"
+    ],
+    "AFNetworking": [
+      "~> 3.2.1"
     ]
   }
 }
