@@ -305,6 +305,10 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     if (self.playerItem == nil) {
         return;
     }
+    //友盟统计到一个Seeking is not possible to time {INDEFINITE}的bug，这么修复一下
+    if (CMTIME_IS_INDEFINITE(time) || CMTIME_IS_INVALID(time)) {
+        return;
+    }
     [self.avPlayer pause];
 //    CMTime tolerance = CMTimeMakeWithSeconds(1, self.playerItem.duration.timescale);
     CMTime tolerance = kCMTimeZero;
@@ -315,6 +319,10 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 
 - (void)seekToTime:(CMTime)time completion:(void (^)(BOOL finished))completion {
     if (self.playerItem == nil) {
+        return;
+    }
+    //友盟统计到一个Seeking is not possible to time {INDEFINITE}的bug，这么修复一下
+    if (CMTIME_IS_INDEFINITE(time) || CMTIME_IS_INVALID(time)) {
         return;
     }
     CMTime tolerance = kCMTimeZero;
