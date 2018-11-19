@@ -29,8 +29,9 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 @property (nonatomic, strong) id timeObserver;
 @property (nonatomic, assign) BOOL isPlayerInited;
 
-//time
+
 @property (nonatomic, assign, readwrite) LXMAVPlayerStatus playerStatus;
+
 
 @property (nonatomic, assign) LXMAVPlayerStatus statusBeforeBackground;
 
@@ -164,6 +165,9 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         CMTime interval = CMTimeMakeWithSeconds(1, 10);
         self.timeObserver = [self.avPlayer addPeriodicTimeObserverForInterval:interval queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
             @strongify(self)
+            if (self.totalTime == 0) {
+                return;
+            }
             self.playerTimeDidChangeBlock(self.currentTime, self.totalTime);
         }];
     }
@@ -294,6 +298,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (void)replay {
+    if (self.isReadyToPlay == NO) { return; }
     @weakify(self)
     [self.avPlayer seekToTime:kCMTimeZero completionHandler:^(BOOL finished) {
         @strongify(self)
@@ -302,6 +307,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (void)seekToTimeAndPlay:(CMTime)time {
+    if (self.isReadyToPlay == NO) { return; }
     if (self.playerItem == nil) {
         return;
     }
@@ -318,6 +324,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (void)seekToTime:(CMTime)time completion:(void (^)(BOOL finished))completion {
+    if (self.isReadyToPlay == NO) { return; }
     if (self.playerItem == nil) {
         return;
     }
@@ -382,6 +389,10 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         return time;
     }
     return 0;
+}
+
+- (BOOL)isReadyToPlay {
+    return self.playerStatus >= LXMAVPlayerStatusReadyToPlay;
 }
 
 @end

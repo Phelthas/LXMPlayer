@@ -18,8 +18,8 @@ typedef NS_ENUM(NSInteger, LXMAVPlayerContentMode) {
 
 typedef NS_ENUM(NSInteger, LXMAVPlayerStatus) {
     LXMAVPlayerStatusUnknown = 0,
-    LXMAVPlayerStatusStalling,
     LXMAVPlayerStatusReadyToPlay,
+    LXMAVPlayerStatusStalling,
     LXMAVPlayerStatusPlaying,
     LXMAVPlayerStatusPaused,
     LXMAVPlayerStatusStopped,
@@ -40,7 +40,7 @@ typedef void(^LXMAVPlayerStatusDidChangeBlock)(LXMAVPlayerStatus status);
 //readonly的属性，方便外部调用
 @property (nonatomic, strong, readonly, nullable) AVPlayerItem *playerItem;
 @property (nonatomic, assign, readonly) LXMAVPlayerStatus playerStatus;
-
+@property (nonatomic, assign, readonly) BOOL isReadyToPlay; //playerItem的状态是否已经到了readyToPlay，没到之前执行seek操作会crash,内部已经做了判断，如果是false时，不会响应seek操作
 
 //callback
 @property (nonatomic, copy, nullable) LXMAVPlayerTimeDidChangeBlock playerTimeDidChangeBlock;
@@ -68,3 +68,12 @@ typedef void(^LXMAVPlayerStatusDidChangeBlock)(LXMAVPlayerStatus status);
 
 
 @end
+
+
+
+/* 遇到的问题
+ 1，AVPlayerItem cannot service a seek request with a completion handler until its status is AVPlayerItemStatusReadyToPlay.
+ 所以在seek之前需要判断一下，如果还没有readyToPlay就直接return。
+ 2，Seeking is not possible to time {INDEFINITE}。
+ 
+ */
