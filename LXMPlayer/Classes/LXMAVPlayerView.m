@@ -105,7 +105,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     @weakify(self)
     
     [self.KVOController observe:self.playerItem keyPath:kAVPlayerItemStatus options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld block:^(id  _Nullable observer, AVPlayerItem * _Nullable object, NSDictionary<NSString *,id> * _Nonnull change) {
-        NSLog(@"change: %@", change);
+//        NSLog(@"change: %@", change);
         @strongify(self)
         AVPlayerItemStatus status = object.status;
         switch (status) {
@@ -134,7 +134,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }];
     
     [self.KVOController observe:self.playerItem keyPath:kAVPlayerItemPlaybackBufferEmpty options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
-        NSLog(@"change: %@", change);
+//        NSLog(@"change: %@", change);
         @strongify(self)
         BOOL oldValue = [change[NSKeyValueChangeOldKey] boolValue];
         BOOL newValue = [change[NSKeyValueChangeNewKey] boolValue];
@@ -146,7 +146,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }];
     
     [self.KVOController observe:self.playerItem keyPath:kAVPlayerItemPlaybackLikelyToKeepUp options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
-        NSLog(@"change: %@", change);
+//        NSLog(@"change: %@", change);
         @strongify(self)
         BOOL oldValue = [change[NSKeyValueChangeOldKey] boolValue];
         BOOL newValue = [change[NSKeyValueChangeNewKey] boolValue];
@@ -307,19 +307,10 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (void)seekToTimeAndPlay:(CMTime)time {
-    if (self.isReadyToPlay == NO) { return; }
-    if (self.playerItem == nil) {
-        return;
-    }
-    //友盟统计到一个Seeking is not possible to time {INDEFINITE}的bug，这么修复一下
-    if (CMTIME_IS_INDEFINITE(time) || CMTIME_IS_INVALID(time)) {
-        return;
-    }
-    [self.avPlayer pause];
-//    CMTime tolerance = CMTimeMakeWithSeconds(1, self.playerItem.duration.timescale);
-    CMTime tolerance = kCMTimeZero;
-    [self.avPlayer seekToTime:time toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:^(BOOL finished) {
-        [self.avPlayer play];
+    @weakify(self)
+    [self seekToTime:time completion:^(BOOL finished) {
+        @strongify(self)
+        [self play];
     }];
 }
 
@@ -333,7 +324,19 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         return;
     }
     CMTime tolerance = kCMTimeZero;
-    [self.avPlayer seekToTime:time toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:completion];
+    @weakify(self)
+    [self.avPlayer seekToTime:time toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:^(BOOL finished) {
+        @strongify(self)
+        if (completion) {
+            completion(finished);
+        }
+        // 这是是发现当stop以后，seek到前面开始播放player状态不会恢复，所以这么处理下
+        if (self.playerStatus == LXMAVPlayerStatusStopped) {
+            self.playerStatus = LXMAVPlayerStatusPlaying;
+            [self delegateStatusDidChangeBlock];
+        }
+    }];
+    
 }
 
 
@@ -392,7 +395,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (BOOL)isReadyToPlay {
-    return self.playerStatus >= LXMAVPlayerStatusReadyToPlay;
+    return self.playerStatus >= LXMAVPlayerStatusReadyToPlay && self.playerStatus != LXMAVPlayerStatusFailed;
 }
 
 @end
