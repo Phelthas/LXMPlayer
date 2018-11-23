@@ -107,6 +107,10 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     [self.KVOController observe:self.playerItem keyPath:kAVPlayerItemStatus options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld block:^(id  _Nullable observer, AVPlayerItem * _Nullable object, NSDictionary<NSString *,id> * _Nonnull change) {
 //        NSLog(@"change: %@", change);
         @strongify(self)
+        if (self.avPlayer.rate == 0) {
+            // 这里这么写是因为：状态变化是异步的，有可能在播放器暂停时观察到状态变化，这时候不应该变动原来的状态
+            return;
+        }
         AVPlayerItemStatus status = object.status;
         switch (status) {
             case AVPlayerItemStatusUnknown:
@@ -136,6 +140,10 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     [self.KVOController observe:self.playerItem keyPath:kAVPlayerItemPlaybackBufferEmpty options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
 //        NSLog(@"change: %@", change);
         @strongify(self)
+        if (self.avPlayer.rate == 0) {
+            // 这里这么写是因为：状态变化是异步的，有可能在播放器暂停时观察到状态变化，这时候不应该变动原来的状态
+            return;
+        }
         BOOL oldValue = [change[NSKeyValueChangeOldKey] boolValue];
         BOOL newValue = [change[NSKeyValueChangeNewKey] boolValue];
         if (oldValue == NO && newValue == YES) {
@@ -148,10 +156,13 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     [self.KVOController observe:self.playerItem keyPath:kAVPlayerItemPlaybackLikelyToKeepUp options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
 //        NSLog(@"change: %@", change);
         @strongify(self)
+        if (self.avPlayer.rate == 0) {
+            // 这里这么写是因为：状态变化是异步的，有可能在播放器暂停时观察到状态变化，这时候不应该变动原来的状态
+            return;
+        }
         BOOL oldValue = [change[NSKeyValueChangeOldKey] boolValue];
         BOOL newValue = [change[NSKeyValueChangeNewKey] boolValue];
-        if (oldValue == NO && newValue == YES) {
-            //这里这么写是因为观察到会有old new都是0的情况
+        if (oldValue == NO && newValue == YES) { //这里这么写是因为观察到会有old new都是0的情况
             self.playerStatus = LXMAVPlayerStatusPlaying;
             [self delegateStatusDidChangeBlock];
         }
