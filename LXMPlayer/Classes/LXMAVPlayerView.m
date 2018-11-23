@@ -165,10 +165,10 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         CMTime interval = CMTimeMakeWithSeconds(1, 10);
         self.timeObserver = [self.avPlayer addPeriodicTimeObserverForInterval:interval queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
             @strongify(self)
-            if (self.totalTime == 0) {
+            if (self.totalSeconds == 0) {
                 return;
             }
-            self.playerTimeDidChangeBlock(self.currentTime, self.totalTime);
+            self.playerTimeDidChangeBlock(self.currentSeconds, self.totalSeconds);
         }];
     }
     
@@ -372,8 +372,8 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     _assetURL = assetURL;
 }
 
-- (NSTimeInterval)currentTime {
-    if (self.playerItem != nil) {
+- (NSTimeInterval)currentSeconds {
+    if (self.playerItem != nil && self.isReadyToPlay) {
         NSTimeInterval time = CMTimeGetSeconds(self.playerItem.currentTime);
         if (isnan(time)) {
             return 0;
@@ -383,8 +383,8 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     return 0;
 }
 
-- (NSTimeInterval)totalTime {
-    if (self.playerItem != nil) {
+- (NSTimeInterval)totalSeconds {
+    if (self.playerItem != nil && self.isReadyToPlay) {
         NSTimeInterval time = CMTimeGetSeconds(self.playerItem.duration);
         if (isnan(time)) {
             return 0;
