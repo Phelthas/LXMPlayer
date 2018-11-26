@@ -309,20 +309,11 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (void)replay {
-    if (self.isReadyToPlay == NO) { return; }
-    @weakify(self)
-    [self.avPlayer seekToTime:kCMTimeZero completionHandler:^(BOOL finished) {
-        @strongify(self)
-        [self play];
-    }];
+    [self seekToTimeAndPlay:kCMTimeZero];
 }
 
 - (void)seekToTimeAndPlay:(CMTime)time {
-    @weakify(self)
-    [self seekToTime:time completion:^(BOOL finished) {
-        @strongify(self)
-        [self play];
-    }];
+    [self seekToTime:time completion:nil];
 }
 
 - (void)seekToTime:(CMTime)time completion:(void (^)(BOOL finished))completion {
@@ -334,10 +325,12 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     if (CMTIME_IS_INDEFINITE(time) || CMTIME_IS_INVALID(time)) {
         return;
     }
+    [self.avPlayer pause];//seek之前还是应该暂停住，且不应该让外界感知到；因为如果在刚readToPlay就seek的话，如果不暂停，会让视频第一帧先放出来，造成界面闪一下。（因为seek的回调是异步的，应该在seek完成的回调中再开始播放）
     CMTime tolerance = kCMTimeZero;
     @weakify(self)
     [self.avPlayer seekToTime:time toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:^(BOOL finished) {
         @strongify(self)
+        [self.avPlayer play];
         if (completion) {
             completion(finished);
         }
