@@ -335,7 +335,8 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
             completion(finished);
         }
         // 这是是发现当stop以后，seek到前面开始播放player状态不会恢复，所以这么处理下
-        if (self.playerStatus == LXMAVPlayerStatusStopped) {
+        // 发现readToPlay的时候直接seek，可能会导致状态一直停留在readToPlay不会变
+        if (self.playerStatus == LXMAVPlayerStatusStopped || self.playerStatus == LXMAVPlayerStatusReadyToPlay) {
             self.playerStatus = LXMAVPlayerStatusPlaying;
             [self delegateStatusDidChangeBlock];
         }
