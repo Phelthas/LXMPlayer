@@ -296,6 +296,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }
     [self removeNotificatiions];
     
+    self.playerLayer.player = nil; //千万注意这一句，坑了我好久，AVPlayerLayer会retain它的player，如果这里不主动设置为nil，player就不会释放。
     self.assetURL = nil;
     self.urlAsset = nil;
     self.playerItem = nil;
