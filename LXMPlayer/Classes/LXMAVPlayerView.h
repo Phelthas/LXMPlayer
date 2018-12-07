@@ -77,5 +77,6 @@ typedef void(^LXMAVPlayerStatusDidChangeBlock)(LXMAVPlayerStatus status);
  1，AVPlayerItem cannot service a seek request with a completion handler until its status is AVPlayerItemStatusReadyToPlay.
  所以在seek之前需要判断一下，如果还没有readyToPlay就直接return。
  2，Seeking is not possible to time {INDEFINITE}。
+ 3，注意AVPlayerLayer会retain其相关的AVPlayer，所以释放的时候，必须主动将AVPlayerView的player设置为nil，否则即使player被设置为nil了，player还是不会释放（因为还有其他地方强引用嘛）
  
  */
