@@ -8,8 +8,8 @@
 
 Pod::Spec.new do |s|
   s.name             = 'LXMPlayer'
-  s.version          = '0.1.0'
-  s.summary          = 'A short description of LXMPlayer.'
+  s.version          = '0.0.1'
+  s.summary          = '封装AVPlayer的一个播放器，提供block回调，只需设置URL即可播放本地或者网络视频'
 
 # This description is used to generate tags and improve search results.
 #   * Think: What does it do? Why did you write it? What is the focus?
@@ -21,11 +21,11 @@ Pod::Spec.new do |s|
 TODO: Add long description of the pod here.
                        DESC
 
-  s.homepage         = 'https://github.com/billthas@gmail.com/LXMPlayer'
+  s.homepage         = 'https://github.com/Phelthas/LXMPlayer'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'billthas@gmail.com' => 'billthas@gmail.com' }
-  s.source           = { :git => 'https://github.com/billthas@gmail.com/LXMPlayer.git', :tag => s.version.to_s }
+  s.source           = { :git => 'https://github.com/Phelthas/LXMPlayer.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '8.0'
