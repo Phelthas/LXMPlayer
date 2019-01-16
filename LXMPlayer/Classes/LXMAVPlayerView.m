@@ -93,13 +93,17 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
      */
     
     /*
-     所以player的rate是没有必要观察的，rate就是在player调用play的时候变为1，调用pause的时候变为0，它的值不根据卡不卡变化，
-     它应该是用来决定当load到新数据是要不要继续播放。
-     文档上还提到一种情况，playbackBufferFull是true但是isPlaybackLikelyToKeepUp还是false，即缓存已经满了，但是缓存的这些内容还不够用来播放，这种情况要自己处理。。。这种情况应该不多，我这儿没有处理。。。
+     当播放本地视频时KVO观察到的顺序与播放网络视频时不太一样：
+     1，首先是观察到kAVPlayerItemPlaybackBufferEmpty的变化，从1变为0，说有缓存到内容了，已经有loadedTimeRanges了，但这时候还不一定能播放，因为数据可能还不够播放；
+     2，然后是kAVPlayerItemPlaybackLikelyToKeepUp，从0变到1，说明可以播放了，这时候会自动开始播放
+     3，然后是kAVPlayerItemStatus的变化，从0变为1，即变为readyToPlay
+     即不同于网络播放的场景，播放本地视频时，是先观察到playing开始，kAVPlayerItemStatus才变为readyToPlay的。
      */
     
     /*
-     测试的时候发现，有时候从APP从后台返回前台，会观察到playerItem的status变化，但新旧值都是readToPlay，这个需要注意，如果有监听状态变化的逻辑，要判断这时候能不能执行操作
+     所以player的rate是没有必要观察的，rate就是在player调用play的时候变为1，调用pause的时候变为0，它的值不根据卡不卡变化，
+     它应该是用来决定当load到新数据是要不要继续播放。
+     文档上还提到一种情况，playbackBufferFull是true但是isPlaybackLikelyToKeepUp还是false，即缓存已经满了，但是缓存的这些内容还不够用来播放，这种情况要自己处理。。。这种情况应该不多，我这儿没有处理。。。
      */
     
     @weakify(self)
@@ -107,30 +111,29 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     [self.KVOController observe:self.playerItem keyPath:kAVPlayerItemStatus options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld block:^(id  _Nullable observer, AVPlayerItem * _Nullable object, NSDictionary<NSString *,id> * _Nonnull change) {
 //        NSLog(@"change: %@", change);
         @strongify(self)
-        
-        AVPlayerItemStatus status = object.status;
-        switch (status) {
-            case AVPlayerItemStatusUnknown:
-                if (self.playerStatus != LXMAVPlayerStatusUnknown) {
-                    self.playerStatus = LXMAVPlayerStatusUnknown;
-                    [self delegateStatusDidChangeBlock];
-                }
-                break;
-            case AVPlayerItemStatusReadyToPlay:
-                // 这里这么写是因为：从后台返回前台时，kvo居然会观察到playerItem的状态变为readToPlay,而我只想在playerItem第一次点击播放状态变为readToPlay的时候通知外部
-                if (self.playerStatus == LXMAVPlayerStatusUnknown) {
-                    self.playerStatus = LXMAVPlayerStatusReadyToPlay;
-                    [self delegateStatusDidChangeBlock];
-                }
-                break;
-            case AVPlayerItemStatusFailed:
-                if (self.playerStatus != LXMAVPlayerStatusFailed) {
-                    self.playerStatus = LXMAVPlayerStatusFailed;
-                    [self delegateStatusDidChangeBlock];
-                }
-                break;
-            default:
-                break;
+        /*
+         测试的时候发现，在真机上，APP从后台返回前台，会观察到playerItem的status变化，但新旧值都是readToPlay,模拟器上没有这个问题。。。
+         */
+        AVPlayerItemStatus oldStatus = [change[NSKeyValueChangeOldKey] integerValue];
+        AVPlayerItemStatus newStatus = [change[NSKeyValueChangeNewKey] integerValue];
+        if (oldStatus == newStatus) {
+            return;
+        }
+        switch (newStatus) {
+        case AVPlayerItemStatusReadyToPlay:
+            if (self.playerItemReadyToPlayBlock) {
+                self.playerItemReadyToPlayBlock();
+            }
+            break;
+        case AVPlayerItemStatusFailed:
+            if (self.playerStatusDidChangeBlock) {
+                self.playerStatusDidChangeBlock(newStatus);
+            }
+        case AVPlayerItemStatusUnknown:
+            if (self.playerStatusDidChangeBlock) {
+                self.playerStatusDidChangeBlock(newStatus);
+            }
+            break;
         }
     }];
     
@@ -165,8 +168,6 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         }
         
     }];
-    
-    
     
     
     if (self.playerTimeDidChangeBlock) {
@@ -209,8 +210,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
             return;
         }
         if (self.statusBeforeBackground == LXMAVPlayerStatusPlaying ||
-            self.statusBeforeBackground == LXMAVPlayerStatusStalling ||
-            self.statusBeforeBackground == LXMAVPlayerStatusReadyToPlay) {
+            self.statusBeforeBackground == LXMAVPlayerStatusStalling) {
             [self play];
         }
         self.statusBeforeBackground = LXMAVPlayerStatusUnknown;
@@ -294,7 +294,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     [self removeNotificatiions];
     
     self.playerLayer.player = nil; //千万注意这一句，坑了我好久，AVPlayerLayer会retain它的player，如果这里不主动设置为nil，player就不会释放。
-    self.assetURL = nil;
+    _assetURL = nil; //使用点语法会触发set方法，所以这里直接访问实例变量了
     self.urlAsset = nil;
     self.playerItem = nil;
     self.avPlayer = nil;
@@ -333,8 +333,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
             completion(finished);
         }
         // 这是是发现当stop以后，seek到前面开始播放player状态不会恢复，所以这么处理下
-        // 发现readToPlay的时候直接seek，可能会导致状态一直停留在readToPlay不会变
-        if (self.playerStatus == LXMAVPlayerStatusStopped || self.playerStatus == LXMAVPlayerStatusReadyToPlay) {
+        if (self.playerStatus == LXMAVPlayerStatusStopped) {
             self.playerStatus = LXMAVPlayerStatusPlaying;
             [self delegateStatusDidChangeBlock];
         }
@@ -398,7 +397,11 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (BOOL)isReadyToPlay {
-    return self.playerStatus >= LXMAVPlayerStatusReadyToPlay && self.playerStatus != LXMAVPlayerStatusFailed;
+    if (self.playerItem != nil && self.playerItem.status == AVPlayerItemStatusReadyToPlay) {
+        return YES;
+    }
+    return NO;
 }
 
 @end
+
