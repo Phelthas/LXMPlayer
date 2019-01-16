@@ -114,8 +114,8 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         /*
          测试的时候发现，在真机上，APP从后台返回前台，会观察到playerItem的status变化，但新旧值都是readToPlay,模拟器上没有这个问题。。。
          */
-        AVPlayerItemStatus oldStatus = [change[NSKeyValueChangeOldKey] integerValue];
-        AVPlayerItemStatus newStatus = [change[NSKeyValueChangeNewKey] integerValue];
+        AVPlayerItemStatus oldStatus = (AVPlayerItemStatus)[change[NSKeyValueChangeOldKey] integerValue];
+        AVPlayerItemStatus newStatus = (AVPlayerItemStatus)[change[NSKeyValueChangeNewKey] integerValue];
         if (oldStatus == newStatus) {
             return;
         }
@@ -127,11 +127,11 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
             break;
         case AVPlayerItemStatusFailed:
             if (self.playerStatusDidChangeBlock) {
-                self.playerStatusDidChangeBlock(newStatus);
+                self.playerStatusDidChangeBlock(LXMAVPlayerStatusFailed);
             }
         case AVPlayerItemStatusUnknown:
             if (self.playerStatusDidChangeBlock) {
-                self.playerStatusDidChangeBlock(newStatus);
+                self.playerStatusDidChangeBlock(LXMAVPlayerStatusUnknown);
             }
             break;
         }
