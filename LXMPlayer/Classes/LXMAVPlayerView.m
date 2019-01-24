@@ -315,6 +315,10 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (void)seekToTime:(CMTime)time completion:(void (^)(BOOL finished))completion {
+    [self seekToTime:time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero completion:completion];
+}
+
+- (void)seekToTime:(CMTime)time toleranceBefore:(CMTime)toleranceBefore toleranceAfter:(CMTime)toleranceAfter completion:(void (^)(BOOL finished))completion {
     if (self.isReadyToPlay == NO) { return; }
     if (self.playerItem == nil) {
         return;
@@ -324,11 +328,11 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         return;
     }
     [self.avPlayer pause];//seek之前还是应该暂停住，且不应该让外界感知到；因为如果在刚readToPlay就seek的话，如果不暂停，会让视频第一帧先放出来，造成界面闪一下。（因为seek的回调是异步的，应该在seek完成的回调中再开始播放）
-    CMTime tolerance = kCMTimeZero;
+    
     @weakify(self)
-    [self.avPlayer seekToTime:time toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:^(BOOL finished) {
+    [self.avPlayer seekToTime:time toleranceBefore:toleranceBefore toleranceAfter:toleranceAfter completionHandler:^(BOOL finished) {
         @strongify(self)
-        [self.avPlayer play];
+        [self.avPlayer play];//这里直接播放还是不行的，如果连续拖动调用的话可能会导致暂停跟播放顺序混乱，为了兼容之前的版本，先不该这里，改用下面的seekToTimeWhilePlaying方法，等有空一起改
         if (completion) {
             completion(finished);
         }
@@ -338,7 +342,20 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
             [self delegateStatusDidChangeBlock];
         }
     }];
+}
+
+- (void)seekToTimeWhilePlaying:(CMTime)time completion:(void (^)(BOOL finished))completion {
+    if (self.isReadyToPlay == NO) { return; }
+    if (self.playerItem == nil) {
+        return;
+    }
+    //友盟统计到一个Seeking is not possible to time {INDEFINITE}的bug，这么修复一下
+    if (CMTIME_IS_INDEFINITE(time) || CMTIME_IS_INVALID(time)) {
+        return;
+    }
     
+    @weakify(self)
+    [self.avPlayer seekToTime:time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero completionHandler:completion];
 }
 
 

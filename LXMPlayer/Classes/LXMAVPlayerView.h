@@ -76,6 +76,10 @@ typedef void(^AVPlayerItemReadyToPlayBlock)(void);
 
 - (void)seekToTime:(CMTime)time completion:(void(^)(BOOL finished))completion;
 
+- (void)seekToTime:(CMTime)time toleranceBefore:(CMTime)toleranceBefore toleranceAfter:(CMTime)toleranceAfter completion:(void (^)(BOOL finished))completion;
+
+- (void)seekToTimeWhilePlaying:(CMTime)time completion:(void (^)(BOOL finished))completion;
+
 - (nullable UIImage *)thumbnailAtCurrentTime;
 
 
