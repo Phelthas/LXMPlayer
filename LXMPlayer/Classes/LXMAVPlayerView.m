@@ -170,16 +170,14 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }];
     
     
-    if (self.playerTimeDidChangeBlock) {
-        CMTime interval = CMTimeMakeWithSeconds(1, 10);
-        self.timeObserver = [self.avPlayer addPeriodicTimeObserverForInterval:interval queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
-            @strongify(self)
-            if (self.totalSeconds == 0) {
-                return;
-            }
-            self.playerTimeDidChangeBlock(self.currentSeconds, self.totalSeconds);
-        }];
-    }
+    CMTime interval = CMTimeMakeWithSeconds(1, 600);
+    self.timeObserver = [self.avPlayer addPeriodicTimeObserverForInterval:interval queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
+        @strongify(self)
+        if (self.totalSeconds == 0) {
+            return;
+        }
+        self.playerTimeDidChangeBlock(self.currentSeconds, self.totalSeconds);
+    }];
     
     [self removeNotificatiions];
     
@@ -372,6 +370,18 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         cgImage = [imageGenerator copyCGImageAtTime:expectedTime actualTime:NULL error:NULL];
     }
     return [UIImage imageWithCGImage:cgImage];
+}
+
+- (void)replaceCurrentPlayerItemWithPlayerItem:(nullable AVPlayerItem *)playerItem {
+    self.assetURL = nil;
+    self.playerItem = playerItem;
+    [self.avPlayer replaceCurrentItemWithPlayerItem:playerItem];
+    if (self.playerStatus == LXMAVPlayerStatusPlaying) {
+        [self.avPlayer play];
+    }
+    if (@available(iOS 9.0, *)) {
+        self.playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = NO;
+    }
 }
 
 
