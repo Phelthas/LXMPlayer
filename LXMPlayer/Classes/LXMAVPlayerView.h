@@ -82,6 +82,7 @@ typedef void(^AVPlayerItemReadyToPlayBlock)(void);
 
 - (nullable UIImage *)thumbnailAtCurrentTime;
 
+- (void)replaceCurrentPlayerItemWithPlayerItem:(nullable AVPlayerItem *)playerItem;
 
 @end
 
