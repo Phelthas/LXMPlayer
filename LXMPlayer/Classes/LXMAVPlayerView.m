@@ -176,7 +176,10 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         if (self.totalSeconds == 0) {
             return;
         }
-        self.playerTimeDidChangeBlock(self.currentSeconds, self.totalSeconds);
+        if (self.playerTimeDidChangeBlock) {
+            self.playerTimeDidChangeBlock(self.currentSeconds, self.totalSeconds);
+        }
+        
     }];
     
     [self removeNotificatiions];
