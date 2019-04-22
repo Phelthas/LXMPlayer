@@ -47,7 +47,7 @@ typedef void(^AVPlayerItemReadyToPlayBlock)(void);
 @property (nonatomic, copy) AVLayerVideoGravity videoGravity;
 
 //readonly的属性，方便外部调用
-@property (nonatomic, strong, readonly, nullable) AVPlayerItem *playerItem;
+@property (nonatomic, strong, nullable) AVPlayerItem *playerItem;
 @property (nonatomic, assign, readonly) LXMAVPlayerStatus playerStatus;
 @property (nonatomic, assign, readonly) NSTimeInterval currentSeconds;//当前播放到的时间，以秒为单位，如果取不到会返回0
 @property (nonatomic, assign, readonly) NSTimeInterval totalSeconds;//当前PlayerItem的总时长，以秒为单位，如果取不到会返回0

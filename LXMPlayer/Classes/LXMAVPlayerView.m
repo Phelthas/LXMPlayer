@@ -23,7 +23,6 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 //private
 
 @property (nonatomic, strong) AVURLAsset *urlAsset;
-@property (nonatomic, strong, readwrite) AVPlayerItem *playerItem;
 @property (nonatomic, strong) AVPlayer *avPlayer;
 @property (nonatomic, strong, readonly) AVPlayerLayer *playerLayer;
 @property (nonatomic, strong) id timeObserver;
@@ -68,8 +67,13 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 
 
 - (void)initializePlayer {
-    self.urlAsset = [AVURLAsset assetWithURL:self.assetURL];
-    self.playerItem = [AVPlayerItem playerItemWithAsset:self.urlAsset];
+    
+    if (_assetURL != nil) {
+        self.urlAsset = [AVURLAsset assetWithURL:self.assetURL];
+        self.playerItem = [AVPlayerItem playerItemWithAsset:self.urlAsset];
+    } else if (_playerItem != nil){
+        _urlAsset = _playerItem.asset;
+    }
     self.avPlayer = [AVPlayer playerWithPlayerItem:self.playerItem];
     self.avPlayer.actionAtItemEnd = AVPlayerActionAtItemEndPause;
     self.playerLayer.player = self.avPlayer;
@@ -245,7 +249,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 #pragma mark - PublicMethod
 
 - (void)play {
-    if (!self.assetURL) {
+    if (nil == self.assetURL && nil == self.playerItem) {
         return;
     }
     if (self.playerStatus == LXMAVPlayerStatusPlaying) {
@@ -402,6 +406,17 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         [self reset];
     }
     _assetURL = assetURL;
+}
+
+- (void)setPlayerItem:(AVPlayerItem *)playerItem {
+    if (playerItem == _playerItem) {
+        return;
+    }
+    if (playerItem != nil) {
+        [self reset];
+    }
+    
+    _playerItem = playerItem;
 }
 
 - (NSTimeInterval)currentSeconds {
