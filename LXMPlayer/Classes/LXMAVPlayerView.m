@@ -175,6 +175,9 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     
     
     CMTime interval = CMTimeMakeWithSeconds(1, 600);
+    if (_playTimeUpdateRate.timescale > 0 && _playTimeUpdateRate.value > 0) {
+        interval = _playTimeUpdateRate;
+    }
     self.timeObserver = [self.avPlayer addPeriodicTimeObserverForInterval:interval queue:dispatch_get_main_queue() usingBlock:^(CMTime time) {
         @strongify(self)
         if (self.totalSeconds == 0) {

@@ -51,6 +51,7 @@ typedef void(^AVPlayerItemReadyToPlayBlock)(void);
 @property (nonatomic, assign, readonly) LXMAVPlayerStatus playerStatus;
 @property (nonatomic, assign, readonly) NSTimeInterval currentSeconds;//当前播放到的时间，以秒为单位，如果取不到会返回0
 @property (nonatomic, assign, readonly) NSTimeInterval totalSeconds;//当前PlayerItem的总时长，以秒为单位，如果取不到会返回0
+@property (nonatomic, assign) CMTime playTimeUpdateRate; // 播放时间更新频率, 默认为1秒
 @property (nonatomic, assign, readonly) BOOL isReadyToPlay; //playerItem的状态是否已经到了readyToPlay，没到之前执行seek操作会crash,内部已经做了判断，如果是false时，不会响应seek操作
 
 //callback
