@@ -341,13 +341,16 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     [self.avPlayer seekToTime:time toleranceBefore:toleranceBefore toleranceAfter:toleranceAfter completionHandler:^(BOOL finished) {
         @strongify(self)
         [self.avPlayer play];//这里直接播放还是不行的，如果连续拖动调用的话可能会导致暂停跟播放顺序混乱，为了兼容之前的版本，先不该这里，改用下面的seekToTimeWhilePlaying方法，等有空一起改
-        if (completion) {
-            completion(finished);
-        }
+        
         // 这是是发现当stop以后，seek到前面开始播放player状态不会恢复，所以这么处理下
         if (self.playerStatus == LXMAVPlayerStatusStopped || self.playerStatus == LXMAVPlayerStatusPaused) {
             self.playerStatus = LXMAVPlayerStatusPlaying;
             [self delegateStatusDidChangeBlock];
+        }
+        
+        // 等上面通知完状态变更后才回调，不然如果回调里面暂停视频会出现状态不同步的情况
+        if (completion) {
+            completion(finished);
         }
     }];
 }
