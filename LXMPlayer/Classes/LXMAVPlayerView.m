@@ -113,7 +113,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     @weakify(self)
     
     [self.KVOController observe:self.playerItem keyPath:kAVPlayerItemStatus options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld block:^(id  _Nullable observer, AVPlayerItem * _Nullable object, NSDictionary<NSString *,id> * _Nonnull change) {
-//        NSLog(@"change: %@", change);
+        //        NSLog(@"change: %@", change);
         @strongify(self)
         /*
          测试的时候发现，在真机上，APP从后台返回前台，会观察到playerItem的status变化，但新旧值都是readToPlay,模拟器上没有这个问题。。。
@@ -124,25 +124,25 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
             return;
         }
         switch (newStatus) {
-        case AVPlayerItemStatusReadyToPlay:
-            if (self.playerItemReadyToPlayBlock) {
-                self.playerItemReadyToPlayBlock();
-            }
-            break;
-        case AVPlayerItemStatusFailed:
-            if (self.playerStatusDidChangeBlock) {
-                self.playerStatusDidChangeBlock(LXMAVPlayerStatusFailed);
-            }
-        case AVPlayerItemStatusUnknown:
-            if (self.playerStatusDidChangeBlock) {
-                self.playerStatusDidChangeBlock(LXMAVPlayerStatusUnknown);
-            }
-            break;
+            case AVPlayerItemStatusReadyToPlay:
+                if (self.playerItemReadyToPlayBlock) {
+                    self.playerItemReadyToPlayBlock();
+                }
+                break;
+            case AVPlayerItemStatusFailed:
+                if (self.playerStatusDidChangeBlock) {
+                    self.playerStatusDidChangeBlock(LXMAVPlayerStatusFailed);
+                }
+            case AVPlayerItemStatusUnknown:
+                if (self.playerStatusDidChangeBlock) {
+                    self.playerStatusDidChangeBlock(LXMAVPlayerStatusUnknown);
+                }
+                break;
         }
     }];
     
     [self.KVOController observe:self.playerItem keyPath:kAVPlayerItemPlaybackBufferEmpty options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
-//        NSLog(@"change: %@", change);
+        //        NSLog(@"change: %@", change);
         @strongify(self)
         if (self.playerStatus == LXMAVPlayerStatusPaused) {
             // 这里这么写是因为：状态变化是异步的，有可能在播放器暂停时观察到状态变化，这时候不应该变动原来的状态
@@ -158,7 +158,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }];
     
     [self.KVOController observe:self.playerItem keyPath:kAVPlayerItemPlaybackLikelyToKeepUp options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld block:^(id  _Nullable observer, id  _Nonnull object, NSDictionary<NSString *,id> * _Nonnull change) {
-//        NSLog(@"change: %@", change);
+        //        NSLog(@"change: %@", change);
         @strongify(self)
         if (self.playerStatus == LXMAVPlayerStatusPaused) {
             // 这里这么写是因为：状态变化是异步的，有可能在播放器暂停时观察到状态变化，这时候不应该变动原来的状态
@@ -183,6 +183,27 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         if (self.totalSeconds == 0) {
             return;
         }
+        
+        if (self.playerStatus == LXMAVPlayerStatusPaused || self.playerStatus == LXMAVPlayerStatusStopped) {
+            return;
+        }
+        
+        if (self.endSeconds > 0) {
+            NSTimeInterval seconds = CMTimeGetSeconds(time);
+            NSTimeInterval delta = fabs(self.endSeconds - seconds);
+            if ((delta < 0.01) || (seconds > self.endSeconds)){
+                // 在 0.01 的误差范围内或者已经超过了目标结束时间，认为达到目标时间点
+                CMTime startTime = CMTimeMakeWithSeconds(self.startSeconds, 600);
+                [self seekToTimeWhilePlaying:startTime completion:^(BOOL finished) {
+                    //
+                }];
+                
+                if (self.playerSeekToStartTimeBlock) {
+                    self.playerSeekToStartTimeBlock();
+                }
+            }
+        }
+        
         if (self.playerTimeDidChangeBlock) {
             self.playerTimeDidChangeBlock(self.currentSeconds, self.totalSeconds);
         }
@@ -322,6 +343,15 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     [self seekToTime:time completion:nil];
 }
 
+- (void)seekToStartTimeAndPlay {
+    CMTime startTime = CMTimeMakeWithSeconds(self.startSeconds, 600);
+    [self seekToTime:startTime completion:nil];
+    
+    if (self.playerSeekToStartTimeBlock) {
+        self.playerSeekToStartTimeBlock();
+    }
+}
+
 - (void)seekToTime:(CMTime)time completion:(void (^)(BOOL finished))completion {
     [self seekToTime:time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero completion:completion];
 }
@@ -395,6 +425,11 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     if (@available(iOS 9.0, *)) {
         self.playerItem.canUseNetworkResourcesForLiveStreamingWhilePaused = NO;
     }
+}
+
+- (void)changePlayTimeRangeWithStart:(NSTimeInterval)start end:(NSTimeInterval)end {
+    self.startSeconds = start;
+    self.endSeconds = end;
 }
 
 

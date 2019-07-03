@@ -40,6 +40,7 @@ typedef void(^LXMAVPlayerTimeDidChangeBlock)(NSTimeInterval currentTime, NSTimeI
 typedef void(^LXMAVPlayerDidPlayToEndBlock)(AVPlayerItem *item);
 typedef void(^LXMAVPlayerStatusDidChangeBlock)(LXMAVPlayerStatus status);
 typedef void(^AVPlayerItemReadyToPlayBlock)(void);
+typedef void(^LXMAVPlayerSeekToStartTimeBlock)(void);
 
 @interface  LXMAVPlayerView : UIView
 
@@ -51,6 +52,8 @@ typedef void(^AVPlayerItemReadyToPlayBlock)(void);
 @property (nonatomic, assign, readonly) LXMAVPlayerStatus playerStatus;
 @property (nonatomic, assign, readonly) NSTimeInterval currentSeconds;//当前播放到的时间，以秒为单位，如果取不到会返回0
 @property (nonatomic, assign, readonly) NSTimeInterval totalSeconds;//当前PlayerItem的总时长，以秒为单位，如果取不到会返回0
+@property (nonatomic, assign) NSTimeInterval startSeconds; // 播放开始时间点
+@property (nonatomic, assign) NSTimeInterval endSeconds; // 播放结束时间点
 @property (nonatomic, assign) CMTime playTimeUpdateRate; // 播放时间更新频率, 默认为1秒
 @property (nonatomic, assign, readonly) BOOL isReadyToPlay; //playerItem的状态是否已经到了readyToPlay，没到之前执行seek操作会crash,内部已经做了判断，如果是false时，不会响应seek操作
 
@@ -59,6 +62,7 @@ typedef void(^AVPlayerItemReadyToPlayBlock)(void);
 @property (nonatomic, copy, nullable) LXMAVPlayerDidPlayToEndBlock playerDidPlayToEndBlock;
 @property (nonatomic, copy, nullable) LXMAVPlayerStatusDidChangeBlock playerStatusDidChangeBlock;
 @property (nonatomic, copy, nullable) AVPlayerItemReadyToPlayBlock playerItemReadyToPlayBlock;
+@property (nonatomic, copy, nullable) LXMAVPlayerSeekToStartTimeBlock playerSeekToStartTimeBlock;
 
 
 #pragma mark - PublicMethod
@@ -75,6 +79,8 @@ typedef void(^AVPlayerItemReadyToPlayBlock)(void);
 
 - (void)seekToTimeAndPlay:(CMTime)time;
 
+- (void)seekToStartTimeAndPlay;
+
 - (void)seekToTime:(CMTime)time completion:(void(^)(BOOL finished))completion;
 
 - (void)seekToTime:(CMTime)time toleranceBefore:(CMTime)toleranceBefore toleranceAfter:(CMTime)toleranceAfter completion:(void (^)(BOOL finished))completion;
@@ -84,6 +90,8 @@ typedef void(^AVPlayerItemReadyToPlayBlock)(void);
 - (nullable UIImage *)thumbnailAtCurrentTime;
 
 - (void)replaceCurrentPlayerItemWithPlayerItem:(nullable AVPlayerItem *)playerItem;
+
+- (void)changePlayTimeRangeWithStart:(NSTimeInterval)start end:(NSTimeInterval)end;
 
 @end
 
