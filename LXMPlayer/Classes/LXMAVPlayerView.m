@@ -125,9 +125,17 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         }
         switch (newStatus) {
             case AVPlayerItemStatusReadyToPlay:
+            {
                 if (self.playerItemReadyToPlayBlock) {
                     self.playerItemReadyToPlayBlock();
                 }
+                
+                // 如果有设置开始时间，则快进到开始时间点
+                if (self.startSeconds > 0) {
+                    CMTime start = CMTimeMakeWithSeconds(self.startSeconds, [self currentTimeScale]);
+                    [self seekToTimeAndPlay:start];
+                }
+            }
                 break;
             case AVPlayerItemStatusFailed:
                 if (self.playerStatusDidChangeBlock) {
@@ -174,7 +182,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }];
     
     
-    CMTime interval = CMTimeMakeWithSeconds(1, 600);
+    CMTime interval = CMTimeMakeWithSeconds(1, [self currentTimeScale]);
     if (_playTimeUpdateRate.timescale > 0 && _playTimeUpdateRate.value > 0) {
         interval = _playTimeUpdateRate;
     }
@@ -193,7 +201,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
             NSTimeInterval delta = fabs(self.endSeconds - seconds);
             if ((delta < 0.01) || (seconds > self.endSeconds)){
                 // 在 0.01 的误差范围内或者已经超过了目标结束时间，认为达到目标时间点
-                CMTime startTime = CMTimeMakeWithSeconds(self.startSeconds, 600);
+                CMTime startTime = CMTimeMakeWithSeconds(self.startSeconds, [self currentTimeScale]);
                 [self seekToTimeWhilePlaying:startTime completion:^(BOOL finished) {
                     //
                 }];
@@ -284,6 +292,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         self.isPlayerInited = YES;
     }
     [self.avPlayer play];
+    
     if (self.playerStatus == LXMAVPlayerStatusPaused) {
         self.playerStatus = LXMAVPlayerStatusPlaying;
         [self delegateStatusDidChangeBlock];
@@ -344,8 +353,14 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (void)seekToStartTimeAndPlay {
-    CMTime startTime = CMTimeMakeWithSeconds(self.startSeconds, 600);
-    [self seekToTime:startTime completion:nil];
+    
+    CMTime startTime = CMTimeMakeWithSeconds(self.startSeconds, [self currentTimeScale]);
+    if (self.isPlayerInited == NO) {
+        // 如果没有初始化，等初始化完并准备播放时，监听到AVPlayerItemStatusReadyToPlay再seek到目标开始时间
+        [self play];
+    } else {
+        [self seekToTime:startTime completion:nil];
+    }
     
     if (self.playerSeekToStartTimeBlock) {
         self.playerSeekToStartTimeBlock();
@@ -487,6 +502,14 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         return YES;
     }
     return NO;
+}
+
+- (int32_t)currentTimeScale {
+    if (self.playerItem) {
+        return self.playerItem.duration.timescale;
+    } else {
+        return 600;
+    }
 }
 
 @end
