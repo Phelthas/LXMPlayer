@@ -91,7 +91,7 @@ typedef void(^LXMAVPlayerSeekToStartTimeBlock)(void);
 
 - (void)replaceCurrentPlayerItemWithPlayerItem:(nullable AVPlayerItem *)playerItem;
 
-- (void)changePlayTimeRangeWithStart:(NSTimeInterval)start end:(NSTimeInterval)end;
+- (void)changePlayTimeRangeWithStart:(NSTimeInterval)start end:(NSTimeInterval)end isRepeat:(BOOL)isRepeat;
 
 @end
 
