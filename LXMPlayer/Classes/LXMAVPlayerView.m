@@ -27,7 +27,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 @property (nonatomic, strong, readonly) AVPlayerLayer *playerLayer;
 @property (nonatomic, strong) id timeObserver;
 @property (nonatomic, assign) BOOL isPlayerInited;
-
+@property (nonatomic, assign) BOOL isRepeatPlay; // 是否在startSeconds和endSeconds之间重复播放
 
 @property (nonatomic, assign, readwrite) LXMAVPlayerStatus playerStatus;
 
@@ -201,13 +201,18 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
             NSTimeInterval delta = fabs(self.endSeconds - seconds);
             if ((delta < 0.01) || (seconds > self.endSeconds)){
                 // 在 0.01 的误差范围内或者已经超过了目标结束时间，认为达到目标时间点
-                CMTime startTime = CMTimeMakeWithSeconds(self.startSeconds, [self currentTimeScale]);
-                [self seekToTimeWhilePlaying:startTime completion:^(BOOL finished) {
-                    //
-                }];
+                CMTime startTime = CMTimeMakeWithSeconds(self.startSeconds, 600);
                 
-                if (self.playerSeekToStartTimeBlock) {
-                    self.playerSeekToStartTimeBlock();
+                if (self.isRepeatPlay) {
+                    [self seekToTimeWhilePlaying:startTime completion:^(BOOL finished) {
+                        //
+                    }];
+                    
+                    if (self.playerSeekToStartTimeBlock) {
+                        self.playerSeekToStartTimeBlock();
+                    }
+                } else {
+                    [self pause];
                 }
             }
         }
@@ -442,7 +447,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }
 }
 
-- (void)changePlayTimeRangeWithStart:(NSTimeInterval)start end:(NSTimeInterval)end {
+- (void)changePlayTimeRangeWithStart:(NSTimeInterval)start end:(NSTimeInterval)end isRepeat:(BOOL)isRepeat{
     self.startSeconds = start;
     self.endSeconds = end;
 }
