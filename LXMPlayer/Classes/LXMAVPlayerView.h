@@ -55,6 +55,7 @@ typedef void(^LXMAVPlayerSeekToStartTimeBlock)(void);
 @property (nonatomic, assign) NSTimeInterval startSeconds; // 播放开始时间点
 @property (nonatomic, assign) NSTimeInterval endSeconds; // 播放结束时间点
 @property (nonatomic, assign) CMTime playTimeUpdateRate; // 播放时间更新频率, 默认为1秒
+@property (nonatomic, assign) float volume; // 播放音量，0.0~1.0，默认为1.0
 @property (nonatomic, assign, readonly) BOOL isReadyToPlay; //playerItem的状态是否已经到了readyToPlay，没到之前执行seek操作会crash,内部已经做了判断，如果是false时，不会响应seek操作
 
 //callback
