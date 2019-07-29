@@ -56,6 +56,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     if (self) {
         self.backgroundColor = [UIColor blackColor];
         self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspect;
+        self.volume = 1.0;
         [[AFNetworkReachabilityManager sharedManager] startMonitoring];
     }
     return self;
@@ -75,6 +76,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         _urlAsset = _playerItem.asset;
     }
     self.avPlayer = [AVPlayer playerWithPlayerItem:self.playerItem];
+    self.avPlayer.volume = self.volume;
     self.avPlayer.actionAtItemEnd = AVPlayerActionAtItemEndPause;
     self.playerLayer.player = self.avPlayer;
     self.playerLayer.videoGravity = self.videoGravity;
@@ -515,6 +517,17 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     } else {
         return 600;
     }
+}
+
+- (void)setVolume:(float)volume {
+    _volume = volume;
+    if (volume > 1.0) {
+        _volume = 1.0;
+    } else if (volume < 0.0) {
+        _volume = 0.0;
+    }
+    
+    self.avPlayer.volume = volume;
 }
 
 @end
