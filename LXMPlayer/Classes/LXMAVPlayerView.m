@@ -128,14 +128,14 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         switch (newStatus) {
             case AVPlayerItemStatusReadyToPlay:
             {
-                if (self.playerItemReadyToPlayBlock) {
-                    self.playerItemReadyToPlayBlock();
-                }
-                
                 // 如果有设置开始时间，则快进到开始时间点
                 if (self.startSeconds > 0) {
                     CMTime start = CMTimeMakeWithSeconds(self.startSeconds, [self currentTimeScale]);
                     [self seekToTimeAndPlay:start];
+                }
+                
+                if (self.playerItemReadyToPlayBlock) {
+                    self.playerItemReadyToPlayBlock();
                 }
             }
                 break;
@@ -383,6 +383,14 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     if (self.playerItem == nil) {
         return;
     }
+    if (self.endSeconds > 0) {
+        // 如果限制了播放结束时间，那么seek时间点超过限制结束时间点时需要跳过
+        NSTimeInterval seekTimeSeconds = CMTimeGetSeconds(time);
+        if (seekTimeSeconds > self.endSeconds) {
+            return;
+        }
+    }
+    
     //友盟统计到一个Seeking is not possible to time {INDEFINITE}的bug，这么修复一下
     if (CMTIME_IS_INDEFINITE(time) || CMTIME_IS_INVALID(time)) {
         return;
@@ -411,6 +419,13 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     if (self.isReadyToPlay == NO) { return; }
     if (self.playerItem == nil) {
         return;
+    }
+    if (self.endSeconds > 0) {
+        // 如果限制了播放结束时间，那么seek时间点超过限制结束时间点时需要跳过
+        NSTimeInterval seekTimeSeconds = CMTimeGetSeconds(time);
+        if (seekTimeSeconds > self.endSeconds) {
+            return;
+        }
     }
     //友盟统计到一个Seeking is not possible to time {INDEFINITE}的bug，这么修复一下
     if (CMTIME_IS_INDEFINITE(time) || CMTIME_IS_INVALID(time)) {
