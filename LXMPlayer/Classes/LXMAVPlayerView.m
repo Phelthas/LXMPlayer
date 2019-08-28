@@ -300,7 +300,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }
     [self.avPlayer play];
     
-    if (self.playerStatus == LXMAVPlayerStatusPaused) {
+    if (self.playerStatus != LXMAVPlayerStatusPlaying) {
         self.playerStatus = LXMAVPlayerStatusPlaying;
         [self delegateStatusDidChangeBlock];
     }
