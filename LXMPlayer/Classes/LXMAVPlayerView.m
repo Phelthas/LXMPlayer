@@ -408,6 +408,10 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
             [self delegateStatusDidChangeBlock];
         }
         
+        if (self.seekTimeCompleteBlock) {
+            self.seekTimeCompleteBlock(CMTimeGetSeconds(time), self.totalSeconds);
+        }
+        
         // 等上面通知完状态变更后才回调，不然如果回调里面暂停视频会出现状态不同步的情况
         if (completion) {
             completion(finished);
@@ -433,7 +437,16 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
     }
     
     @weakify(self)
-    [self.avPlayer seekToTime:time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero completionHandler:completion];
+    [self.avPlayer seekToTime:time toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero completionHandler:^(BOOL finished) {
+        
+        if (self.seekTimeCompleteBlock) {
+            self.seekTimeCompleteBlock(CMTimeGetSeconds(time), self.totalSeconds);
+        }
+        
+        if (completion) {
+            completion(finished);
+        }
+    }];
 }
 
 

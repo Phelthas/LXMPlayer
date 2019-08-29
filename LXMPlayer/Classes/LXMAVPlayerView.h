@@ -37,6 +37,7 @@ typedef NS_ENUM(NSInteger, LXMAVPlayerStatus) {
 
 
 typedef void(^LXMAVPlayerTimeDidChangeBlock)(NSTimeInterval currentTime, NSTimeInterval totalTime);
+typedef void(^LXMAVPlayerSeekTimeCompleteBlock)(NSTimeInterval seekTime, NSTimeInterval totalTime);
 typedef void(^LXMAVPlayerDidPlayToEndBlock)(AVPlayerItem *item);
 typedef void(^LXMAVPlayerStatusDidChangeBlock)(LXMAVPlayerStatus status);
 typedef void(^AVPlayerItemReadyToPlayBlock)(void);
@@ -59,7 +60,11 @@ typedef void(^LXMAVPlayerSeekToStartTimeBlock)(void);
 @property (nonatomic, assign, readonly) BOOL isReadyToPlay; //playerItem的状态是否已经到了readyToPlay，没到之前执行seek操作会crash,内部已经做了判断，如果是false时，不会响应seek操作
 
 //callback
+
+/// 只会在play状态下，时间的变化会回调
 @property (nonatomic, copy, nullable) LXMAVPlayerTimeDidChangeBlock playerTimeDidChangeBlock;
+/// 在任何播放状态下，调用了seek方法后会回调
+@property (nonatomic, copy, nullable) LXMAVPlayerSeekTimeCompleteBlock seekTimeCompleteBlock;
 @property (nonatomic, copy, nullable) LXMAVPlayerDidPlayToEndBlock playerDidPlayToEndBlock;
 @property (nonatomic, copy, nullable) LXMAVPlayerStatusDidChangeBlock playerStatusDidChangeBlock;
 @property (nonatomic, copy, nullable) AVPlayerItemReadyToPlayBlock playerItemReadyToPlayBlock;
