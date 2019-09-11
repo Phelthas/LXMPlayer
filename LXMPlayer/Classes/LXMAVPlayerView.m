@@ -480,6 +480,7 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 - (void)changePlayTimeRangeWithStart:(NSTimeInterval)start end:(NSTimeInterval)end isRepeat:(BOOL)isRepeat{
     self.startSeconds = start;
     self.endSeconds = end;
+    self.isRepeatPlay = isRepeat;
 }
 
 
