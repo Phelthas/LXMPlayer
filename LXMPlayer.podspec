@@ -40,6 +40,6 @@ TODO: Add long description of the pod here.
   # s.frameworks = 'UIKit', 'MapKit'
   s.dependency 'KVOController', '~> 1.2.0'
   s.dependency 'LXMBlockKit', '~> 0.0.7'
-  s.dependency 'AFNetworking', '~> 3.2.1'
+  s.dependency 'AFNetworking', '~> 3.2.0'
   
 end
