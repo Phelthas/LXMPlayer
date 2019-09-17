@@ -10,7 +10,6 @@
 #import <LXMPlayer/LXMPlayerMacro.h>
 #import <LXMBlockKit/LXMBlockKit.h>
 #import "LXMPlayerMacro.h"
-#import <AFNetworking/AFNetworking.h>
 
 
 //static void * kLXMAVPlayerViewContext = &kLXMAVPlayerViewContext;
@@ -57,7 +56,6 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         self.backgroundColor = [UIColor blackColor];
         self.playerLayer.videoGravity = AVLayerVideoGravityResizeAspect;
         self.volume = 1.0;
-        [[AFNetworkReachabilityManager sharedManager] startMonitoring];
     }
     return self;
 }
@@ -260,20 +258,12 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         self.statusBeforeBackground = LXMAVPlayerStatusUnknown;
     }];
     
-    [kNSNotificationCenter addObserver:self name:AFNetworkingReachabilityDidChangeNotification callback:^(NSNotification * _Nullable sender) {
-        @strongify(self)
-        if ([AFNetworkReachabilityManager sharedManager].networkReachabilityStatus != AFNetworkReachabilityStatusReachableViaWiFi) {
-            self.statusBeforeBackground = LXMAVPlayerStatusPaused;
-        }
-        
-    }];
 }
 
 - (void)removeNotificatiions {
     [kNSNotificationCenter lxm_removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
     [kNSNotificationCenter lxm_removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
     [kNSNotificationCenter lxm_removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];
-    [kNSNotificationCenter lxm_removeObserver:self name:AFNetworkingReachabilityDidChangeNotification object:nil];
 }
 
 - (void)delegateStatusDidChangeBlock {
