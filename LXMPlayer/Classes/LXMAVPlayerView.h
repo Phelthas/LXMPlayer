@@ -38,7 +38,7 @@ typedef NS_ENUM(NSInteger, LXMAVPlayerStatus) {
 
 typedef void(^LXMAVPlayerTimeDidChangeBlock)(NSTimeInterval currentTime, NSTimeInterval totalTime);
 typedef void(^LXMAVPlayerSeekTimeCompleteBlock)(NSTimeInterval seekTime, NSTimeInterval totalTime);
-typedef void(^LXMAVPlayerDidPlayToEndBlock)(AVPlayerItem *item);
+typedef void(^LXMAVPlayerDidPlayToEndBlock)( AVPlayerItem * _Nonnull item);
 typedef void(^LXMAVPlayerStatusDidChangeBlock)(LXMAVPlayerStatus status);
 typedef void(^AVPlayerItemReadyToPlayBlock)(void);
 typedef void(^LXMAVPlayerSeekToStartTimeBlock)(void);
@@ -46,7 +46,7 @@ typedef void(^LXMAVPlayerSeekToStartTimeBlock)(void);
 @interface  LXMAVPlayerView : UIView
 
 @property (nonatomic, strong, nullable) NSURL *assetURL;
-@property (nonatomic, copy) AVLayerVideoGravity videoGravity;
+@property (nonatomic, copy, nonnull) AVLayerVideoGravity videoGravity;
 
 //readonly的属性，方便外部调用
 @property (nonatomic, strong, nullable) AVPlayerItem *playerItem;
@@ -87,11 +87,11 @@ typedef void(^LXMAVPlayerSeekToStartTimeBlock)(void);
 
 - (void)seekToStartTimeAndPlay;
 
-- (void)seekToTime:(CMTime)time completion:(void(^)(BOOL finished))completion;
+- (void)seekToTime:(CMTime)time completion:(void(^ _Nullable)(BOOL finished))completion;
 
-- (void)seekToTime:(CMTime)time toleranceBefore:(CMTime)toleranceBefore toleranceAfter:(CMTime)toleranceAfter completion:(void (^)(BOOL finished))completion;
+- (void)seekToTime:(CMTime)time toleranceBefore:(CMTime)toleranceBefore toleranceAfter:(CMTime)toleranceAfter completion:(void (^ _Nullable)(BOOL finished))completion;
 
-- (void)seekToTimeWhilePlaying:(CMTime)time completion:(void (^)(BOOL finished))completion;
+- (void)seekToTimeWhilePlaying:(CMTime)time completion:(void (^ _Nullable)(BOOL finished))completion;
 
 - (nullable UIImage *)thumbnailAtCurrentTime;
 
