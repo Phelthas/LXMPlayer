@@ -288,7 +288,18 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
         [self initializePlayer];
         self.isPlayerInited = YES;
     }
-    [self.avPlayer play];
+    
+    // 达到了设定的结束时间，这个结束时间可能小于视频的实际结束时间
+    if (self.endSeconds > 0) {
+        NSTimeInterval delta = fabs(self.endSeconds - self.currentSeconds);
+        if ((delta < 0.01) || (self.currentSeconds > self.endSeconds)){
+            [self seekToStartTimeAndPlay];
+        } else {
+            [self.avPlayer play];
+        }
+    } else {
+        [self.avPlayer play];
+    }
     
     if (self.playerStatus != LXMAVPlayerStatusPlaying) {
         self.playerStatus = LXMAVPlayerStatusPlaying;
@@ -342,6 +353,12 @@ static NSString * const kAVPlayerItemPlaybackLikelyToKeepUp = @"playbackLikelyTo
 }
 
 - (void)replay {
+    
+    if (self.startSeconds > 0) {
+        [self seekToStartTimeAndPlay];
+        return;
+    }
+    
     [self seekToTimeAndPlay:kCMTimeZero];
 }
 
